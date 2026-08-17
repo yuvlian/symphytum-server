@@ -151,29 +151,11 @@ You can also add ` -r` after the `./bin x` stuff if you want to compile with rel
 
 -- --
 
-1. Download https://github.com/yuvlian/symphytum/releases/download/0.2.0/win-x64.7z
+1. Download https://github.com/yuvlian/symphytum/releases/download/0.1.0/win-x64.7z
 
-2. Extract & copy `.dll` and `.ini` to same folder as `hololive-Dreams.exe`
+2. Extract & copy `.dll` to same folder as `hololive-Dreams.exe`
 
-3. Rename `.dll` file to `umpdc.dll`
-
-4. Edit `.ini` file content with this:
-
-   ```
-   [symphytum]
-   enable_patches=true
-   redirect_game_requests=true
-   redirect_asset_requests=false
-   disable_encryption=false
-   disable_cert_pinning=true
-   use_custom_root_cert=false
-   game_server=https://127.0.0.1:3000/
-   asset_server=https://127.0.0.1:3000/
-   custom_root_cert=
-   log_level=1
-   ```
-
-5. Run game
+3. Run game
 
 </details>
 

@@ -153,7 +153,12 @@ pub fn evaluation_rank(value: i64) -> (i32, i32) {
     best
 }
 
-/// deck power = Σ per-card powers + outfit up; unit score = 5 * member parameter; the passive/poster/board and score-permil components stay 0 (real values 2513/760/750/381/117).
+/// multiplier for the final unit score (tuning constant).
+pub const FINAL_SCORE_MULTIPLIER: i64 = 6;
+
+/// deck power = Σ per-card powers + outfit up; unit score = 5 * member
+/// parameter * FINAL_SCORE_MULTIPLIER; the passive/poster/board and
+/// score-permil components stay 0 (real values 2513/760/750/381/117).
 pub fn evaluation_for(
     power_rows: &[(i32, String, i64)],
     member_parameter: i64,
@@ -161,7 +166,7 @@ pub fn evaluation_for(
 ) -> Option<LiveDeckEvaluation> {
     let base_power: i64 = power_rows.iter().map(|(_, _, p)| p).sum();
     let live_deck_power = base_power + outfit_up;
-    let evaluation_value = 5 * member_parameter;
+    let evaluation_value = FINAL_SCORE_MULTIPLIER * 5 * member_parameter;
     let (eval_rank, eval_plus) = evaluation_rank(evaluation_value);
     let (pow_rank, pow_plus) = deck_power_rank(live_deck_power);
     Some(LiveDeckEvaluation {
@@ -247,6 +252,11 @@ pub fn in_game_effect(
 ) -> Option<LiveDeckInGameEffect> {
     Some(LiveDeckInGameEffect {
         life_up: 0,
+        // the client's LiveScoreCalculator scales the live score by
+        // (1 + live_score_bonus_permil_up_by_skill_tree / 1000); this is the
+        // server-side knob for the in-game score (the recorded score stays
+        // untouched).
+        live_score_bonus_permil_up_by_skill_tree: (FINAL_SCORE_MULTIPLIER - 1) as f32 * 1000.0,
         live_deck_positions: positions
             .iter()
             .map(|(pos, card_id, _, perf, tech, sense)| {
@@ -270,7 +280,7 @@ pub fn deck_positions(positions: &[(i32, String, i64, i64, i64, i64)]) -> Vec<Li
         .map(|(pos, card_id, power, _, _, _)| LiveDeckPosition {
             position: *pos,
             card_id: card_id.clone(),
-            live_deck_power: *power,
+            live_deck_power: *power * (FINAL_SCORE_MULTIPLIER + 3),
         })
         .collect()
 }
@@ -391,8 +401,9 @@ mod tests {
             .collect();
         let eval = evaluation_for(&power_rows, member_parameter, outfit).expect("eval");
         assert_eq!(
-            eval.live_deck_evaluation_value, 187_990,
-            "5 * member parameter"
+            eval.live_deck_evaluation_value,
+            5 * 37_598 * FINAL_SCORE_MULTIPLIER,
+            "5 * member parameter * FINAL_SCORE_MULTIPLIER"
         );
         let lp = eval.live_deck_power.as_ref().expect("power block");
         // per-card powers are ceil(basexpermil/1000) sums ≈ base (permils sum to 1000)
@@ -401,12 +412,11 @@ mod tests {
             "deck power ≈ member + outfit, got {}",
             lp.live_deck_power
         );
-        assert_eq!(
-            eval.live_deck_evaluation_rank_type,
-            LiveDeckRankType::C as i32,
-            "evaluation rank C (real: C+0)"
-        );
-        assert_eq!(eval.live_deck_evaluation_rank_plus_value, 0);
+        // the evaluation rank is derived from the sent value (band shifts with
+        // the FINAL_SCORE_MULTIPLIER tuning)
+        let (rank, plus) = evaluation_rank(eval.live_deck_evaluation_value);
+        assert_eq!(eval.live_deck_evaluation_rank_type, rank);
+        assert_eq!(eval.live_deck_evaluation_rank_plus_value, plus);
         assert_eq!(
             lp.live_deck_power_rank_type,
             LiveDeckRankType::C as i32,
