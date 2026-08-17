@@ -153,9 +153,11 @@ You can also add ` -r` after the `./bin x` stuff if you want to compile with rel
 
 1. Download https://github.com/yuvlian/symphytum/releases/download/0.1.0/win-x64.7z
 
-2. Extract & copy `.dll` to same folder as `hololive-Dreams.exe`
+2. Extract the content to same folder as `hololive-Dreams.exe`
 
-3. Run game
+3. Rename dll file to `umpdc.dll`
+
+4. Run game
 
 </details>
 
